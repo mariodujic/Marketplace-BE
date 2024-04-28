@@ -1,5 +1,7 @@
 import hashlib
 
+from sqlalchemy import Boolean
+
 from database import db
 
 
@@ -14,6 +16,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, server_default=db.func.current_timestamp(),
                            onupdate=db.func.current_timestamp())
+    active = db.Column(Boolean, default=True, nullable=False)
 
     @staticmethod
     def hash_password(password):
@@ -41,3 +44,35 @@ class User(db.Model):
     @classmethod
     def user_exists(cls, email):
         return db.session.query(db.exists().where(cls.email == email)).scalar()
+
+    @classmethod
+    def get_by_email(cls, email):
+        user = cls.query.filter_by(email=email).first()
+        return user
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "phone_number": self.phone_number,
+            "address": self.address,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "active": self.active
+        }
+
+    def update(self, updates):
+        for key, value in updates.items():
+            if hasattr(self, key) and value is not None:
+                setattr(self, key, value)
+        try:
+            if 'password' in updates:
+                self.password_hash = self.hash_password(updates['password'])
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error occurred during update: {e}")
+            return False
+        return True

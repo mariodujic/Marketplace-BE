@@ -6,6 +6,7 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 
 from blueprints.auth import auth
+from blueprints.user import user
 from database import db
 
 # Load environment variables
@@ -21,6 +22,8 @@ jwt = JWTManager(app)
 
 # Register blueprints
 app.register_blueprint(auth)
+app.register_blueprint(user)
+
 # Set database ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

@@ -41,8 +41,13 @@ def sign_in():
     if User.verify_user(email, password):
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
-        return jsonify({"message": "User successfully signed in", "access_token": access_token,
-                        "refresh_token": refresh_token}), 200
+        return jsonify(
+            {
+                "message": "User successfully signed in",
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            }
+        ), 200
     else:
         return jsonify({"error": "Invalid email or password"}), 401
 

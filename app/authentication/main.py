@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, create_refresh_token
 
 from app.database.main import insert_user, verify_user, user_exists
 from app.utils.main import is_valid_email
 
-main = Blueprint('main', __name__)
+authentication = Blueprint('authentication', __name__)
 
 
-@main.route('/sign-up', methods=['POST'])
+@authentication.route('/sign-up', methods=['POST'])
 def sign_up():
     data = request.get_json()
     email = data['email']
@@ -28,7 +29,7 @@ def sign_up():
         return jsonify({"error": str(e)}), 500
 
 
-@main.route('/sign-in', methods=['POST'])
+@authentication.route('/sign-in', methods=['POST'])
 def sign_in():
     data = request.get_json()
     email = data['email']
@@ -41,4 +42,17 @@ def sign_in():
     if not authenticated:
         return jsonify({"error": "Invalid email or password"}), 401
 
-    return jsonify({"message": "User successfully signed in"}), 200
+    access_token = create_access_token(identity=email)
+    refresh_token = create_refresh_token(identity=email)
+
+    return jsonify(
+        {"message": "User successfully signed in", "access_token": access_token, "refresh_token": refresh_token}
+    ), 200
+
+
+@authentication.route('/token/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    current_user = get_jwt_identity()
+    new_token = create_access_token(identity=current_user, fresh=False)
+    return jsonify({'access_token': new_token})

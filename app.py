@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from app.authentication.main import authentication
-from app.database.main import create_users_table
+from blueprints.auth import auth
+from database import db
 
 # Load environment variables
 load_dotenv()
@@ -20,10 +20,13 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
 # Register blueprints
-app.register_blueprint(authentication)
-
-# Create missing tables
-create_users_table()
+app.register_blueprint(auth)
+# Set database ORM
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+with app.app_context():
+    db.create_all()  # Created db tables if not exist
 
 if __name__ == '__main__':
     app.run(debug=os.getenv('DEBUG', 'False') == 'True')

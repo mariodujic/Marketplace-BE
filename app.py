@@ -7,7 +7,9 @@ from flask_jwt_extended import JWTManager
 
 from blueprints.auth import auth
 from blueprints.user import user
+from blueprints.product import product
 from database import db
+from payment.stripe import initialize_stripe
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,7 @@ jwt = JWTManager(app)
 # Register blueprints
 app.register_blueprint(auth)
 app.register_blueprint(user)
+app.register_blueprint(product)
 
 # Set database ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
@@ -30,6 +33,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 with app.app_context():
     db.create_all()  # Created db tables if not exist
+
+initialize_stripe()
 
 if __name__ == '__main__':
     app.run(debug=os.getenv('DEBUG', 'False') == 'True')

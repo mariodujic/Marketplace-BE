@@ -3,10 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from database.user import User
 
-user = Blueprint('user', __name__)
+user_blueprint = Blueprint('user', __name__)
 
 
-@user.route('/user', methods=['GET'])
+@user_blueprint.route('/user', methods=['GET'])
 @jwt_required()
 def get_user_profile():
     current_user_email = get_jwt_identity()
@@ -17,7 +17,7 @@ def get_user_profile():
         return jsonify({"error": "User not found"}), 404
 
 
-@user.route('/user', methods=['PATCH'])
+@user_blueprint.route('/user', methods=['PATCH'])
 @jwt_required()
 def update_user_profile():
     current_user_email = get_jwt_identity()
@@ -41,7 +41,7 @@ def update_user_profile():
         return jsonify({"error": "Failed to update user"}), 500
 
 
-@user.route('/user/deactivate', methods=['POST'])
+@user_blueprint.route('/user/deactivate', methods=['POST'])
 @jwt_required()
 def deactivate_user():
     current_user_email = get_jwt_identity()

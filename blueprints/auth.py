@@ -4,10 +4,10 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 from database.user import User
 from utils.main import is_valid_email
 
-auth = Blueprint('auth', __name__)
+auth_blueprint = Blueprint('auth', __name__)
 
 
-@auth.route('/sign-up', methods=['POST'])
+@auth_blueprint.route('/sign-up', methods=['POST'])
 def sign_up():
     data = request.get_json()
     email = data.get('email')
@@ -29,7 +29,7 @@ def sign_up():
         return jsonify({"error": "Failed to register user"}), 500
 
 
-@auth.route('/sign-in', methods=['POST'])
+@auth_blueprint.route('/sign-in', methods=['POST'])
 def sign_in():
     data = request.get_json()
     email = data.get('email')
@@ -52,7 +52,7 @@ def sign_in():
         return jsonify({"error": "Invalid email or password"}), 401
 
 
-@auth.route('/token/refresh', methods=['POST'])
+@auth_blueprint.route('/token/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     current_user = get_jwt_identity()

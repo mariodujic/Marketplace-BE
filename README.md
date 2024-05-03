@@ -50,9 +50,12 @@ graph TD;
 
     subgraph PostgreSQL Database
         UserTable[User Table];
-        ProductTable[Product Table];
         OrderTable[Order Table];
         CartTable[Cart Table];
+    end
+
+    subgraph PaymentGateway
+        StripeProducts[Products];
     end
 
     Auth --> AuthAPI
@@ -62,7 +65,7 @@ graph TD;
     User --> UserAPI
 
     AuthAPI --> UserTable
-    ProductAPI --> ProductTable
+    ProductAPI --> StripeProducts
     CartAPI --> CartTable
     OrderAPI --> OrderTable
     UserAPI --> UserTable

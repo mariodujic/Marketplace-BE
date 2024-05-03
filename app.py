@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from blueprints.auth import auth
-from blueprints.user import user
-from blueprints.product import product
+from blueprints.auth import auth_blueprint
+from blueprints.product import product_blueprint
+from blueprints.user import user_blueprint
 from database import db
 from payment.stripe import initialize_stripe
 
@@ -23,9 +23,9 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
 # Register blueprints
-app.register_blueprint(auth)
-app.register_blueprint(user)
-app.register_blueprint(product)
+app.register_blueprint(auth_blueprint)
+app.register_blueprint(user_blueprint)
+app.register_blueprint(product_blueprint)
 
 # Set database ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')

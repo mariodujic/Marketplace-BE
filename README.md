@@ -1,6 +1,6 @@
 # Info
 
-This is KMP MarketPlace backend app.
+This is MarketPlace backend app.
 
 # Run
 

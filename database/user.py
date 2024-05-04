@@ -1,6 +1,7 @@
 import hashlib
 
 from sqlalchemy import Boolean
+from sqlalchemy.orm import relationship
 
 from database import db
 

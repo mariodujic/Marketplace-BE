@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from blueprints.auth import auth_blueprint
-from blueprints.product import product_blueprint
-from blueprints.user import user_blueprint
+from api.auth import auth_blueprint
+from api.cart import cart_blueprint
+from api.product import product_blueprint
+from api.user import user_blueprint
 from database import db
 from payment.stripe import initialize_stripe
 
@@ -22,15 +23,17 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
-# Register blueprints
+# Register api
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(user_blueprint)
 app.register_blueprint(product_blueprint)
+app.register_blueprint(cart_blueprint)
 
 # Set database ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
 with app.app_context():
     db.create_all()  # Created db tables if not exist
 

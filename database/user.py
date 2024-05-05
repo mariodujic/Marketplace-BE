@@ -30,9 +30,8 @@ class User(db.Model):
         try:
             db.session.commit()
             return new_user
-        except Exception as e:
+        except Exception as _:
             db.session.rollback()
-            print(f"Error occurred: {e}")
             return None
 
     @classmethod
@@ -72,8 +71,7 @@ class User(db.Model):
             if 'password' in updates:
                 self.password_hash = self.hash_password(updates['password'])
             db.session.commit()
-        except Exception as e:
+        except Exception as _:
             db.session.rollback()
-            print(f"Error occurred during update: {e}")
             return False
         return True

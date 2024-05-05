@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, create_refresh_token
 
+from database.cart import Cart
 from database.user import User
 from utils.main import is_valid_email
 
@@ -38,16 +39,29 @@ def sign_in():
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        return jsonify({"error": "Email does not exist"}), 401
+
     if User.verify_user(email, password):
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
-        return jsonify(
-            {
-                "message": "User successfully signed in",
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }
-        ), 200
+        response = {
+            "message": "User successfully signed in",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+
+        user_id = user.id
+        guest_id = data.get('guest_id')
+        if guest_id:
+            merge_result = Cart.merge_carts(guest_id, user_id)
+            if merge_result != "Cart merged successfully":
+                response["cart_error"] = merge_result
+            else:
+                response["cart_message"] = merge_result
+
+        return jsonify(response), 200
     else:
         return jsonify({"error": "Invalid email or password"}), 401
 

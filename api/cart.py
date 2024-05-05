@@ -2,11 +2,13 @@ from flask import Blueprint, request, jsonify
 
 from database.cart import Cart
 from database.user import User
+from utils.limiter import limiter
 
 cart_blueprint = Blueprint('cart', __name__)
 
 
 @cart_blueprint.route('/cart', methods=['GET'])
+@limiter.limit("100/minute")
 def get_user_cart():
     user_id = request.args.get('user_id')
     guest_id = request.args.get('guest_id')
@@ -24,6 +26,7 @@ def get_user_cart():
 
 
 @cart_blueprint.route('/cart/add', methods=['POST'])
+@limiter.limit("100/minute")
 def add_item_to_cart():
     data = request.get_json()
 
@@ -61,6 +64,7 @@ def add_item_to_cart():
 
 
 @cart_blueprint.route('/cart/remove', methods=['POST'])
+@limiter.limit("100/minute")
 def remove_item_from_cart():
     data = request.get_json()
 

@@ -11,6 +11,7 @@ from api.product import product_blueprint
 from api.user import user_blueprint
 from database import db
 from payment.stripe import initialize_stripe
+from utils.limiter import limiter
 
 # Load environment variables
 load_dotenv()
@@ -38,6 +39,9 @@ with app.app_context():
     db.create_all()  # Created db tables if not exist
 
 initialize_stripe()
+
+# Initialize request rate limiter
+limiter.init_app(app)
 
 if __name__ == '__main__':
     app.run(debug=os.getenv('DEBUG', 'False') == 'True')

@@ -3,12 +3,14 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 
 from database.cart import Cart
 from database.user import User
+from utils.limiter import limiter
 from utils.main import is_valid_email
 
 auth_blueprint = Blueprint('auth', __name__)
 
 
 @auth_blueprint.route('/sign-up', methods=['POST'])
+@limiter.limit("100/minute")
 def sign_up():
     data = request.get_json()
     email = data.get('email')
@@ -31,6 +33,7 @@ def sign_up():
 
 
 @auth_blueprint.route('/sign-in', methods=['POST'])
+@limiter.limit("100/minute")
 def sign_in():
     data = request.get_json()
     email = data.get('email')

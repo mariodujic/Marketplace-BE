@@ -32,7 +32,7 @@ To run application in a Docker container:
 
 ```mermaid
 graph TD;
-    subgraph Mobile App
+    subgraph Web App
         Auth[User Authentication];
         Catalog[Product Catalog];
         Cart[Shopping Cart];

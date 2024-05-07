@@ -55,6 +55,20 @@ def get_products():
     return products
 
 
+def get_product_default_price_and_currency(product_id):
+    try:
+        product = stripe.Product.retrieve(product_id)
+        default_price_id = product.get('default_price')
+        if default_price_id:
+            default_price = stripe.Price.retrieve(default_price_id)
+            return default_price.unit_amount, default_price.currency
+
+    except stripe.error.InvalidRequestError:
+        print(f"Product with ID {product_id} not found.")
+
+    return None, None
+
+
 @dataclass
 class StripeProduct:
     id: str

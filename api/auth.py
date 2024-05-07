@@ -3,8 +3,9 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 
 from database.cart import Cart
 from database.user import User
+from utils.constants import ResponseKey
 from utils.limiter import limiter
-from utils.main import is_valid_email
+from utils.common import is_valid_email
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -17,19 +18,19 @@ def sign_up():
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+        return jsonify({ResponseKey.ERROR.value: "Email and password are required"}), 400
 
     if not is_valid_email(email):
-        return jsonify({"error": "Invalid email format"}), 400
+        return jsonify({ResponseKey.ERROR.value: "Invalid email format"}), 400
 
     if User.user_exists(email):
-        return jsonify({"error": "User already exists"}), 409
+        return jsonify({ResponseKey.ERROR.value: "User already exists"}), 409
 
     new_user = User.create_user(email, password)
     if new_user:
-        return jsonify({"message": "User successfully registered"}), 201
+        return jsonify({ResponseKey.MESSAGE.value: "User successfully registered"}), 201
     else:
-        return jsonify({"error": "Failed to register user"}), 500
+        return jsonify({ResponseKey.ERROR.value: "Failed to register user"}), 500
 
 
 @auth_blueprint.route('/sign-in', methods=['POST'])
@@ -40,33 +41,34 @@ def sign_in():
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+        return jsonify({ResponseKey.ERROR.value: "Email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
     if user is None:
-        return jsonify({"error": "Email does not exist"}), 401
+        return jsonify({ResponseKey.ERROR.value: "Email does not exist"}), 401
 
     if User.verify_user(email, password):
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
         response = {
-            "message": "User successfully signed in",
-            "access_token": access_token,
-            "refresh_token": refresh_token
+            ResponseKey.MESSAGE.value: "User successfully signed in",
+            ResponseKey.ACCESS_TOKEN.value: access_token,
+            ResponseKey.REFRESH_TOKEN.value: refresh_token
         }
 
         user_id = user.id
         guest_id = data.get('guest_id')
         if guest_id:
+            # TODO Should I create dedicated cart API to check if merge is required?
             merge_result = Cart.merge_carts(guest_id, user_id)
             if merge_result != "Cart merged successfully":
-                response["cart_error"] = merge_result
+                response[ResponseKey.CART_ERROR.value] = merge_result
             else:
-                response["cart_message"] = merge_result
+                response[ResponseKey.CART_MESSAGE.value] = merge_result
 
         return jsonify(response), 200
     else:
-        return jsonify({"error": "Invalid email or password"}), 401
+        return jsonify({ResponseKey.ERROR.value: "Invalid email or password"}), 401
 
 
 @auth_blueprint.route('/token/refresh', methods=['POST'])
@@ -74,4 +76,4 @@ def sign_in():
 def refresh():
     current_user = get_jwt_identity()
     new_token = create_access_token(identity=current_user, fresh=False)
-    return jsonify({'access_token': new_token})
+    return jsonify({ResponseKey.ACCESS_TOKEN.value: new_token})

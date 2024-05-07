@@ -4,8 +4,9 @@ from typing import Optional, List
 from flask import Blueprint, jsonify
 
 from payment.stripe_product import get_products, StripeProduct
+from utils.constants import ResponseKey
 from utils.limiter import limiter
-from utils.main import safe_int
+from utils.common import safe_int
 
 product_blueprint = Blueprint('product', __name__)
 
@@ -14,7 +15,7 @@ product_blueprint = Blueprint('product', __name__)
 @limiter.limit("400/minute")
 def get_user_profile():
     products_dict = [map_stripe_to_product(prod).__dict__ for prod in get_products()]
-    return jsonify({"message": "Products successfully retrieved.", "products": products_dict}), 200
+    return jsonify({ResponseKey.MESSAGE.value: "Products successfully retrieved.", "products": products_dict}), 200
 
 
 @dataclass

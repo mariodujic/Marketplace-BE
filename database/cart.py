@@ -13,10 +13,11 @@ class Cart(db.Model):
     guest_id = Column(String, nullable=True)
 
     # Relations
+    order = relationship('Order', uselist=False, back_populates='cart')
     items = relationship('CartItem', back_populates='cart', cascade="all, delete-orphan")
 
     @classmethod
-    def get_cart(cls, user_id=None, guest_id=None):
+    def get_cart_by_user_id(cls, user_id=None, guest_id=None):
         if user_id:
             return Cart.query.filter_by(user_id=user_id).first()
         elif guest_id:
@@ -24,8 +25,17 @@ class Cart(db.Model):
         return None
 
     @classmethod
+    def get_cart_by_id(cls, cart_id):
+        cart = Cart.query.filter_by(id=cart_id).first()
+        if cart:
+            return True, cart
+        else:
+            return False, 'Cart not found'
+
+    @classmethod
     def add_item_to_cart(cls, product_id, quantity, user_id=None, guest_id=None):
-        cart = cls.get_cart(user_id, guest_id)
+        cart = cls.get_cart_by_user_id(user_id, guest_id)
+
         if not cart:
             cart = Cart(user_id=user_id, guest_id=guest_id)
             db.session.add(cart)
@@ -41,14 +51,14 @@ class Cart(db.Model):
 
     @classmethod
     def remove_item_from_cart(cls, product_id, quantity, user_id=None, guest_id=None):
-        cart = cls.get_cart(user_id, guest_id)
+        cart = cls.get_cart_by_user_id(user_id, guest_id)
         if not cart:
-            raise ValueError("Cart not found")
+            return False, "Cart not found"
 
         cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
 
         if not cart_item:
-            raise ValueError("Item not found in cart")
+            return False, "Item not found in cart"
 
         if cart_item.quantity > quantity:
             cart_item.quantity -= quantity
@@ -56,6 +66,7 @@ class Cart(db.Model):
             db.session.delete(cart_item)
 
         db.session.commit()
+        return True, "Successfully removed item from cart"
 
     @classmethod
     def merge_carts(cls, guest_id, user_id):
@@ -97,6 +108,23 @@ class Cart(db.Model):
         except Exception as _:
             session.rollback()
             return "Unexpected error during merging carts"
+
+    @classmethod
+    def delete_cart(cls, cart_id):
+        session = db.session
+        try:
+            cart = Cart.query.filter_by(id=cart_id).first()
+
+            if not cart:
+                return "Cart not found"
+
+            session.delete(cart)
+            session.commit()
+            return "Cart removed successfully"
+
+        except Exception as e:
+            session.rollback()
+            return f"Database error during cart removal: {str(e)}"
 
     def to_dict(self):
         return {

@@ -1,7 +1,6 @@
 import hashlib
 
 from sqlalchemy import Boolean
-from sqlalchemy.orm import relationship
 
 from database import db
 
@@ -75,3 +74,23 @@ class User(db.Model):
             db.session.rollback()
             return False
         return True
+
+    @classmethod
+    def validate_user_id(cls, user_id, guest_id):
+        if not user_id and not guest_id:
+            return False, "Either user_id or guest_id is required"
+
+        if user_id:
+            try:
+                user_id = int(user_id)
+            except ValueError:
+                return False, "Invalid user_id format"
+
+            user = User.query.filter_by(id=user_id).first()
+            if not user:
+                return False, "User does not exist"
+
+        if guest_id and (not isinstance(guest_id, str) or guest_id.strip() == ""):
+            return False, "Invalid guest_id format"
+
+        return True, None

@@ -11,3 +11,4 @@ class ResponseKey(Enum):
     ORDER_ID: str = "order_id"
     TOTAL_AMOUNT: str = "total_amount"
     CURRENCY: str = "currency"
+    CHECKOUT_URL: str = "checkout_url"

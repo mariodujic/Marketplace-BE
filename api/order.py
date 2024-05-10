@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
+from payment.stripe_checkout import get_stripe_checkout_session
 from payment.stripe_product import get_product_default_price_and_currency
 from utils.constants import ResponseKey
 from utils.limiter import limiter
@@ -46,7 +47,7 @@ def create_order():
 
     # Check if pending order with this cart_id exists and remove it
     success, existing_order = Order.get_order_by_cart_id(cart_id=cart_id, status=OrderStatus.PENDING.value)
-    if existing_order:
+    if success:
         Order.cancel_order(existing_order.id)
 
     # Check if cart exists
@@ -92,14 +93,45 @@ def create_order():
 
     order.update_total_amount(total_amount=total_amount)
 
+    checkout_created, result = _get_checkout_session(order)
+
+    if not checkout_created:
+        return jsonify({ResponseKey.ERROR.value: result}), 400
+
+    checkout_session_url = result.url
+
     return jsonify(
         {
             ResponseKey.MESSAGE.value: "Order created successfully",
             ResponseKey.ORDER_ID.value: order.id,
-            ResponseKey.TOTAL_AMOUNT.value: order.total_amount,
-            ResponseKey.CURRENCY.value: currency
+            ResponseKey.CHECKOUT_URL.value: checkout_session_url,
         }
     ), 201
+
+
+def _get_checkout_session(order):
+    items = [{
+        "price_data": {
+            "currency": item.currency,
+            "product_data": {
+                "name": item.product_id,
+            },
+            "unit_amount": int(item.price)
+        },
+        "quantity": item.quantity
+    } for item in order.items]
+
+    user = User.get_by_id(user_id=order.user_id)
+    customer_email = None
+    if user:
+        customer_email = user.email
+
+    return get_stripe_checkout_session(
+        order_id=order.id,
+        cart_id=order.cart_id,
+        customer_email=customer_email,
+        items=items
+    )
 
 
 @order_blueprint.route('/order/cancel', methods=['POST'])

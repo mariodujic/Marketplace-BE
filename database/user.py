@@ -49,6 +49,11 @@ class User(db.Model):
         user = cls.query.filter_by(email=email).first()
         return user
 
+    @classmethod
+    def get_by_id(cls, user_id):
+        user = cls.query.filter_by(id=user_id).first()
+        return user
+
     def to_dict(self):
         return {
             "id": self.id,

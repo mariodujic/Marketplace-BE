@@ -57,9 +57,9 @@ class Order(db.Model):
     @classmethod
     def get_order_by_cart_id(cls, cart_id, status):
         try:
-            order = Order.query.filter_by(cart_id=cart_id, status=status).first()
-            if order:
-                return True, order
+            order = Order.query.filter_by(cart_id=cart_id, status=status)
+            if order.count() > 0:
+                return True, order.first()
             else:
                 return False, "No order linked to this cart"
         except Exception as e:

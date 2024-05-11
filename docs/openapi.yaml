@@ -1,0 +1,549 @@
+openapi: 3.0.0
+
+info:
+  title: Marketplace API
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "User already exists"
+    AccessTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+    SignUpRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          example: "password123"
+    SignInRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          example: "password123"
+        guest_id:
+          type: string
+          example: "1"
+    CartRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: "1"
+        guest_id:
+          type: string
+          example: ""
+        product_id:
+          type: string
+          example: "prod_Q26Pr25Ks69CZG"
+        quantity:
+          type: integer
+          example: 1
+    CartItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: integer
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the product.
+        created:
+          type: integer
+          format: int64
+          description: Unix timestamp of when the product was created.
+        default_price:
+          type: string
+          nullable: true
+          description: Default price of the product, if available.
+        description:
+          type: string
+          nullable: true
+          description: Description of the product.
+        images:
+          type: array
+          items:
+            type: string
+          description: List of image URLs for the product.
+        category:
+          type: string
+          nullable: true
+          description: Category ID of the product, converted to integer.
+        name:
+          type: string
+          description: Name of the product.
+        updated:
+          type: integer
+          format: int64
+          description: Unix timestamp of the last update to the product.
+    OrderResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        order:
+          type: object
+          properties:
+            order_id:
+              type: string
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderItem'
+    OrderCreateRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        guest_id:
+          type: string
+        cart_id:
+          type: string
+    OrderCreateResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        order_id:
+          type: string
+        checkout_url:
+          type: string
+    OrderCancelRequest:
+      type: object
+      properties:
+        order_id:
+          type: integer
+    OrderCancelResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+        currency:
+          type: string
+
+paths:
+  /sign-up:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User successfully registered"
+        '400':
+          description: Email and password are required or invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to register user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sign-in:
+    post:
+      tags:
+        - Auth
+      summary: Sign in a user and return access and refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: User successfully signed in
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccessTokenResponse'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User successfully signed in"
+        '401':
+          description: Invalid credentials or email does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Email and password are required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /token/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh the access token using a refresh token
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Access token successfully refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+
+  /user:
+    get:
+      tags:
+        - User
+      security:
+        - BearerAuth: [ ]
+      summary: Get user profile
+      description: Retrieve the profile of the current user based on JWT.
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Successfully retrieved user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                  username:
+                    type: string
+                  id:
+                    type: integer
+                  active:
+                    type: boolean
+        '404':
+          description: User not found
+
+    patch:
+      tags:
+        - User
+      summary: Update user profile
+      description: Update the profile information for the current user.
+      operationId: updateUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User updated successfully"
+        '403':
+          description: Forbidden - cannot update profile
+        '404':
+          description: User not found
+        '500':
+          description: Failed to update user
+
+  /user/deactivate:
+    post:
+      tags:
+        - User
+      summary: Deactivate user profile
+      description: Deactivate the user profile for the current user.
+      operationId: deactivateUserProfile
+      responses:
+        '200':
+          description: User profile deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deactivated successfully"
+        '404':
+          description: User not found
+        '409':
+          description: User already deactivated
+
+  /cart:
+    get:
+      tags:
+        - Cart
+      summary: Retrieve user cart
+      description: Retrieve the cart contents for the current user.
+      operationId: getUserCart
+      parameters:
+        - in: query
+          name: user_id
+          required: false
+          schema:
+            type: string
+          description: The ID of the user associated with the order. One of user_id or guest_id must be provided.
+        - in: query
+          name: guest_id
+          required: false
+          schema:
+            type: string
+          description: The guest ID associated with the order if applicable. One of user_id or guest_id must be provided.
+      responses:
+        '200':
+          description: Successfully retrieved cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '404':
+          description: Cart not found
+  /cart/add:
+    post:
+      tags:
+        - Cart
+      summary: Add item to cart
+      description: Add an item to the cart for the current user.
+      operationId: addItemToCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartRequest'
+      responses:
+        '201':
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Item added to cart successfully"
+        '400':
+          description: Invalid data provided
+  /cart/remove:
+    post:
+      tags:
+        - Cart
+      summary: Remove item from cart
+      description: Remove an item from the cart for the current user.
+      operationId: removeItemFromCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartRequest'
+      responses:
+        '200':
+          description: Item removed from cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Item removed from cart successfully"
+        '400':
+          description: Invalid data provided
+        '404':
+          description: Item not found in cart
+  /product:
+    get:
+      tags:
+        - Products
+      summary: Retrieve all products
+      description: Fetches a list of products from the API, each represented with detailed information.
+      operationId: getProducts
+      responses:
+        '200':
+          description: A list of products successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Products successfully retrieved."
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '429':
+          description: Too many requests - rate limit exceeded.
+  /order:
+    get:
+      tags:
+        - Order
+      summary: Retrieve an order
+      description: Fetches details of a specific order using order ID.
+      operationId: getOrder
+      parameters:
+        - in: query
+          name: order_id
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the order to retrieve.
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+          description: The ID of the user associated with the order.
+        - in: query
+          name: guest_id
+          required: false
+          schema:
+            type: string
+          description: The guest ID associated with the order if applicable.
+      responses:
+        '200':
+          description: Order successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Order not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/create:
+    post:
+      tags:
+        - Order
+      summary: Create a new order
+      description: Creates a new order based on the provided cart ID and user information.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+      responses:
+        '201':
+          description: Order created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreateResponse'
+        '400':
+          description: Invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/cancel:
+    post:
+      tags:
+        - Order
+      summary: Cancel an order
+      description: Cancels an existing order using the provided order ID.
+      operationId: cancelOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCancelRequest'
+      responses:
+        '200':
+          description: Order canceled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCancelResponse'
+        '400':
+          description: Invalid request or order ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -13,12 +13,18 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Request completed successfully"
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
-          example: "User already exists"
+          example: "Error completing request"
     AccessTokenResponse:
       type: object
       properties:
@@ -164,6 +170,27 @@ components:
         price:
           type: number
         currency:
+          type: string
+    WishlistResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        wishlist:
+          type: array
+          items:
+            $ref: '#/components/schemas/WishlistItem'
+    WishlistItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: string
+    WishlistItemRequest:
+      type: object
+      properties:
+        product_id:
           type: string
 
 paths:
@@ -543,6 +570,89 @@ paths:
                 $ref: '#/components/schemas/OrderCancelResponse'
         '400':
           description: Invalid request or order ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wishlist:
+    get:
+      summary: Retrieve a user's wishlist
+      security:
+        - BearerAuth: [ ]
+      operationId: getWishlist
+      tags:
+        - Wishlist
+      responses:
+        200:
+          description: Wishlist successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistResponse'
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Wishlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /wishlist/add:
+    post:
+      summary: Add an item to the wishlist
+      security:
+        - BearerAuth: [ ]
+      operationId: addItemToWishlist
+      tags:
+        - Wishlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistItemRequest'
+      responses:
+        201:
+          description: Item added to wishlist successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Input validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wishlist/remove:
+    post:
+      summary: Remove an item from the wishlist
+      security:
+        - BearerAuth: [ ]
+      operationId: removeItemFromWishlist
+      tags:
+        - Wishlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistItemRequest'
+      responses:
+        200:
+          description: Item removed from wishlist successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Input validation error or item not found
           content:
             application/json:
               schema:

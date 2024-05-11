@@ -10,6 +10,7 @@ from api.cart import cart_blueprint
 from api.order import order_blueprint
 from api.product import product_blueprint
 from api.user import user_blueprint
+from api.wishlist import wishlist_blueprint
 from database import db
 from payment.stripe import initialize_stripe
 from utils.limiter import limiter
@@ -31,6 +32,7 @@ app.register_blueprint(user_blueprint)
 app.register_blueprint(product_blueprint)
 app.register_blueprint(cart_blueprint)
 app.register_blueprint(order_blueprint)
+app.register_blueprint(wishlist_blueprint)
 
 # Set database ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')

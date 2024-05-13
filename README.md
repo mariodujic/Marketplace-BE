@@ -22,11 +22,16 @@ To run application in a Docker container:
 
 4. Access the application at `http://localhost:5000`.
 
-# PaaS
-
-## Used services
+# Database
 
 [Supabase](https://supabase.com/dashboard/project/ulwhvgtkewyxpcubqfjq) PostgreSQL.
+
+# Payment Gateway
+
+Stripe is used as a payment gateway. Some of the docs used during development:
+- [Stripe API](https://docs.stripe.com/api)
+- [Stripe CLI](https://docs.stripe.com/stripe-apps/reference/cli)
+- [Webhooks](https://docs.stripe.com/webhooks)
 
 # Graph
 

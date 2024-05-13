@@ -1,17 +1,66 @@
 import json
+import time
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
 import stripe
 
 
+@dataclass
+class StripeProduct:
+    id: str
+    object: str
+    active: bool
+    created: int
+    default_price: Optional[str] = None
+    description: Optional[str] = None
+    images: List[str] = field(default_factory=list)
+    features: List[str] = field(default_factory=list)
+    livemode: bool = False
+    attributes: List[str] = field(default_factory=list)
+    marketing_features: List[str] = field(default_factory=list)
+    metadata: Dict[str, str] = field(default_factory=dict)
+    name: str = ""
+    package_dimensions: Optional[dict] = None
+    shippable: Optional[bool] = None
+    statement_descriptor: Optional[str] = None
+    tax_code: Optional[str] = None
+    unit_label: Optional[str] = None
+    type: Optional[str] = None
+    updated: int = 0
+    url: Optional[str] = None
+
+
+# Time-to-Live in seconds
+# 15 min
+_ttl = 900
+
+
+@dataclass
+class ProductCache:
+    cache: List[StripeProduct] = field(default_factory=list)
+    cache_expiration_time: float = field(default_factory=lambda: time.time() + _ttl)
+
+    def is_expired(self):
+        return time.time() > self.cache_expiration_time
+
+    def update_cache(self, new_cache):
+        self.cache = new_cache
+        self.cache_expiration_time = time.time() + _ttl
+
+
+_product_cache = ProductCache()
+
+
 # Stripe doc reference: https://stripe.com/docs/api/products/list, https://docs.stripe.com/api/prices/retrieve
 def get_products():
-    products_response = stripe.Product.list(limit=100)
+    global _product_cache
+    if _product_cache.cache and not _product_cache.is_expired():
+        return _product_cache.cache
 
+    products_response = stripe.Product.list(limit=100)
     products_json = json.dumps(products_response)
     data = json.loads(products_json)
-
     products = []
 
     for prod in data['data']:
@@ -52,6 +101,7 @@ def get_products():
 
         products.append(product)
 
+    _product_cache.update_cache(products)
     return products
 
 
@@ -67,28 +117,3 @@ def get_product_default_price_and_currency(product_id):
         print(f"Product with ID {product_id} not found.")
 
     return None, None
-
-
-@dataclass
-class StripeProduct:
-    id: str
-    object: str
-    active: bool
-    created: int
-    default_price: Optional[str] = None
-    description: Optional[str] = None
-    images: List[str] = field(default_factory=list)
-    features: List[str] = field(default_factory=list)
-    livemode: bool = False
-    attributes: List[str] = field(default_factory=list)
-    marketing_features: List[str] = field(default_factory=list)
-    metadata: Dict[str, str] = field(default_factory=dict)
-    name: str = ""
-    package_dimensions: Optional[dict] = None
-    shippable: Optional[bool] = None
-    statement_descriptor: Optional[str] = None
-    tax_code: Optional[str] = None
-    unit_label: Optional[str] = None
-    type: Optional[str] = None
-    updated: int = 0
-    url: Optional[str] = None

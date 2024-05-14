@@ -53,7 +53,7 @@ _product_cache = ProductCache()
 
 
 # Stripe doc reference: https://stripe.com/docs/api/products/list, https://docs.stripe.com/api/prices/retrieve
-def get_products():
+def get_stripe_products():
     global _product_cache
     if _product_cache.cache and not _product_cache.is_expired():
         return _product_cache.cache
@@ -117,3 +117,10 @@ def get_product_default_price_and_currency(product_id):
         print(f"Product with ID {product_id} not found.")
 
     return None, None
+
+
+def get_all_product_category_ids():
+    products = get_stripe_products()
+    category_ids = {product.metadata['category_id'] for product in products if 'category_id' in product.metadata}
+    return list(category_ids)
+

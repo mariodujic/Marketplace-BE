@@ -459,13 +459,20 @@ paths:
           description: Invalid data provided
         '404':
           description: Item not found in cart
-  /product:
+  /products:
     get:
       tags:
         - Products
-      summary: Retrieve all products
+      summary: Retrieve all products or by category id
       description: Fetches a list of products from the API, each represented with detailed information.
       operationId: getProducts
+      parameters:
+        - in: query
+          name: category_id
+          required: false
+          schema:
+            type: string
+          description: The ID of the product category to filter by.
       responses:
         '200':
           description: A list of products successfully retrieved.
@@ -481,6 +488,30 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Product'
+        '429':
+          description: Too many requests - rate limit exceeded.
+  /products/categories:
+    get:
+      tags:
+        - Products
+      summary: Retrieve all product categories
+      description: Fetches a list of all product categories from the API.
+      operationId: getProductCategories
+      responses:
+        '200':
+          description: A list of product categories successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Products successfully retrieved."
+                  categories:
+                    type: array
+                    items:
+                      type: string
         '429':
           description: Too many requests - rate limit exceeded.
   /order:

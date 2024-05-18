@@ -24,7 +24,6 @@ def get_products():
     category_id = request.args.get('category_id')
 
     all_products = [map_stripe_to_product(product) for product in get_stripe_products()]
-    print(all_products)
     if category_id:
         products = [product for product in all_products if safe_int(product.category_id) == safe_int(category_id)]
     else:

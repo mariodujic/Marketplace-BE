@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from dotenv import load_dotenv
 from flask import Flask
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from api.auth import auth_blueprint
@@ -22,6 +23,9 @@ env_file = get_environment_file(env_mode)
 load_dotenv(env_file)
 
 app = Flask(__name__)
+
+if env_mode == Environment.Dev.value:
+    cors = CORS(app)  # CORS is enabled for all origins during development
 
 # Load JWT config
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
@@ -51,4 +55,4 @@ initialize_stripe()
 limiter.init_app(app)
 
 if __name__ == '__main__':
-    app.run(debug=os.getenv('DEBUG', 'False') == 'True')
+    app.run()

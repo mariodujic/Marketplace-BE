@@ -4,6 +4,25 @@ This is MarketPlace backend app.
 
 # Run
 
+## Locally
+
+1. Set environmental variables:
+
+   ```bash
+   export FLASK_ENV=development # or production
+   export FLASK_DEBUG=1
+   ```
+
+2. Add `.env.development` or `.env.production` file to the project root directory.
+
+3. Run app:
+
+   ```bash 
+   flask run
+   ```
+
+## Docker
+
 To run application in a Docker container:
 
 1. Install Docker on your system.
@@ -29,6 +48,7 @@ To run application in a Docker container:
 # Payment Gateway
 
 Stripe is used as a payment gateway. Some of the docs used during development:
+
 - [Stripe API](https://docs.stripe.com/api)
 - [Stripe CLI](https://docs.stripe.com/stripe-apps/reference/cli)
 - [Webhooks](https://docs.stripe.com/webhooks)

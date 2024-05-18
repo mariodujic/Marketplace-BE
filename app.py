@@ -13,10 +13,13 @@ from api.user import user_blueprint
 from api.wishlist import wishlist_blueprint
 from database import db
 from payment.stripe import initialize_stripe
+from utils.environment import Environment, get_environment_file
 from utils.limiter import limiter
 
 # Load environment variables
-load_dotenv()
+env_mode = os.getenv('FLASK_ENV', Environment.Dev.value)
+env_file = get_environment_file(env_mode)
+load_dotenv(env_file)
 
 app = Flask(__name__)
 

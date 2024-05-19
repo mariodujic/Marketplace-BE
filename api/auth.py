@@ -76,4 +76,4 @@ def sign_in():
 def refresh():
     current_user = get_jwt_identity()
     new_token = create_access_token(identity=current_user, fresh=False)
-    return jsonify({ResponseKey.ACCESS_TOKEN.value: new_token})
+    return jsonify({ResponseKey.ACCESS_TOKEN.value: new_token}), 200

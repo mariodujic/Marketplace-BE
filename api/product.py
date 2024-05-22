@@ -22,17 +22,24 @@ def get_product_categories():
 @limiter.limit("400/minute")
 def get_products():
     category_id = request.args.get('category_id')
+    featured = request.args.get('featured') == 'true'
 
-    all_products = [map_stripe_to_product(product) for product in get_stripe_products()]
-    if category_id:
-        products = [product for product in all_products if safe_int(product.category_id) == safe_int(category_id)]
-    else:
-        products = all_products
+    all_products = get_stripe_products()
+
+    filtered_products = []
+    for product in all_products:
+        if category_id and safe_int(product.metadata.get('category_id')) != safe_int(category_id):
+            continue
+
+        if featured and product.metadata.get('featured') != 'true':
+            continue
+
+        filtered_products.append(map_stripe_to_product(product))
 
     return jsonify(
         {
             ResponseKey.MESSAGE.value: "Products successfully retrieved.",
-            "products": products
+            "products": filtered_products
         }
     ), 200
 

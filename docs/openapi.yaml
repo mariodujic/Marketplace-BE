@@ -473,6 +473,12 @@ paths:
           schema:
             type: string
           description: The ID of the product category to filter by.
+        - in: query
+          name: featured
+          required: false
+          schema:
+            type: boolean
+          description: Filters featured products.
       responses:
         '200':
           description: A list of products successfully retrieved.

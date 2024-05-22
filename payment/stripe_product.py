@@ -48,6 +48,12 @@ class ProductCache:
         self.cache = new_cache
         self.cache_expiration_time = time.time() + _ttl
 
+    def get_product_by_id(self, product_id: str) -> Optional[StripeProduct]:
+        for product in self.cache:
+            if product.id == product_id:
+                return product
+        return None
+
 
 _product_cache = ProductCache()
 
@@ -98,11 +104,17 @@ def get_stripe_products():
             updated=prod['updated'],
             url=prod.get('url')
         )
-
         products.append(product)
 
     _product_cache.update_cache(products)
     return products
+
+
+def get_cached_product_by_id(product_id: str) -> Optional[StripeProduct]:
+    global _product_cache
+    if _product_cache.is_expired():
+        get_stripe_products()
+    return _product_cache.get_product_by_id(product_id)
 
 
 def get_product_default_price_and_currency(product_id):
@@ -123,4 +135,3 @@ def get_all_product_category_ids():
     products = get_stripe_products()
     category_ids = {product.metadata['category_id'] for product in products if 'category_id' in product.metadata}
     return list(category_ids)
-

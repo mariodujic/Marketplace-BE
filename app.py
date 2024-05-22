@@ -14,6 +14,7 @@ from api.user import user_blueprint
 from api.wishlist import wishlist_blueprint
 from database import db
 from payment.stripe import initialize_stripe
+from payment.stripe_product import get_stripe_products
 from utils.environment import Environment, get_environment_file
 from utils.limiter import limiter
 
@@ -49,7 +50,9 @@ db.init_app(app)
 with app.app_context():
     db.create_all()  # Created db tables if not exist
 
+# Initialize Stripe
 initialize_stripe()
+get_stripe_products()
 
 # Initialize request rate limiter
 limiter.init_app(app)

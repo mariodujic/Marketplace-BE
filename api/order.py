@@ -4,7 +4,7 @@ from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
 from payment.stripe_checkout import get_stripe_checkout_session
-from payment.stripe_product import get_product_default_price_and_currency
+from payment.stripe_product import get_product_default_price_and_currency, get_cached_product_by_id
 from utils.constants import ResponseKey
 from utils.limiter import limiter
 
@@ -110,21 +110,29 @@ def create_order():
 
 
 def _get_checkout_session(order):
-    items = [{
-        "price_data": {
-            "currency": item.currency,
-            "product_data": {
-                "name": item.product_id,
-            },
-            "unit_amount": int(item.price)
-        },
-        "quantity": item.quantity
-    } for item in order.items]
+    items = []
+
+    for item in order.items:
+        product = get_cached_product_by_id(item.product_id)
+        if product:
+            price_data = {
+                "currency": item.currency,
+                "product_data": {
+                    "name": product.name,
+                    "description": product.description,
+                    "images": product.images,
+                },
+                "unit_amount": int(item.price)
+            }
+            items.append({
+                "price_data": price_data,
+                "quantity": item.quantity
+            })
+        else:
+            print(f"Product with ID {item.product_id} not found in cache.")
 
     user = User.get_by_id(user_id=order.user_id)
-    customer_email = None
-    if user:
-        customer_email = user.email
+    customer_email = user.email if user else None
 
     return get_stripe_checkout_session(
         order_id=order.id,

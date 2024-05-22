@@ -14,7 +14,10 @@ def get_stripe_checkout_session(order_id, cart_id, customer_email, items):
                 'order_id': order_id,
                 'cart_id': cart_id
             },
-            customer_email=customer_email
+            customer_email=customer_email,
+            shipping_address_collection={
+                'allowed_countries': ['HR']
+            }
         )
     except Exception as e:
         return False, str(e)

@@ -52,6 +52,7 @@ class Product:
     description: Optional[str] = None
     images: List[str] = field(default_factory=list)
     category_id: Optional[str] = None
+    in_stock: Optional[bool] = None
     name: str = ""
     updated: int = 0
 
@@ -64,6 +65,7 @@ def map_stripe_to_product(stripe_product: StripeProduct) -> Product:
         description=stripe_product.description,
         images=stripe_product.images,
         category_id=safe_int(stripe_product.metadata.get('category_id')),
+        in_stock=stripe_product.metadata.get('in_stock') == 'true' if 'in_stock' in stripe_product.metadata else False,
         name=stripe_product.name,
         updated=stripe_product.updated
     )

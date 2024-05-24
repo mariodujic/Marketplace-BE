@@ -107,7 +107,7 @@ components:
           items:
             type: string
           description: List of image URLs for the product.
-        category:
+        category_id:
           type: string
           nullable: true
           description: Category ID of the product, converted to integer.
@@ -118,6 +118,9 @@ components:
           type: integer
           format: int64
           description: Unix timestamp of the last update to the product.
+        in_stock:
+          type: boolean
+          description: Product availability.
     OrderResponse:
       type: object
       properties:

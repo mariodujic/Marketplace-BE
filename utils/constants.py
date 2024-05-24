@@ -6,6 +6,7 @@ class ResponseKey(Enum):
     ERROR: str = "error"
     ACCESS_TOKEN: str = "access_token"
     REFRESH_TOKEN: str = "refresh_token"
+    USER: str = "user"
     CART_MESSAGE: str = "cart_message"
     CART_ERROR: str = "cart_error"
     ORDER_ID: str = "order_id"

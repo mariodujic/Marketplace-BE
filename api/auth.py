@@ -43,7 +43,7 @@ def sign_in():
     if not email or not password:
         return jsonify({ResponseKey.ERROR.value: "Email and password are required"}), 400
 
-    user = User.query.filter_by(email=email).first()
+    user = User.get_by_email(email=email)
     if user is None:
         return jsonify({ResponseKey.ERROR.value: "Email does not exist"}), 401
 
@@ -53,7 +53,8 @@ def sign_in():
         response = {
             ResponseKey.MESSAGE.value: "User successfully signed in",
             ResponseKey.ACCESS_TOKEN.value: access_token,
-            ResponseKey.REFRESH_TOKEN.value: refresh_token
+            ResponseKey.REFRESH_TOKEN.value: refresh_token,
+            ResponseKey.USER.value: user.to_dict()
         }
 
         user_id = user.id

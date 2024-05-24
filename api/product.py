@@ -23,18 +23,22 @@ def get_product_categories():
 def get_products():
     category_id = request.args.get('category_id')
     featured = request.args.get('featured') == 'true'
+    product_ids = request.args.getlist('id')
 
     all_products = get_stripe_products()
 
     filtered_products = []
-    for product in all_products:
-        if category_id and safe_int(product.metadata.get('category_id')) != safe_int(category_id):
-            continue
+    if product_ids:
+        filtered_products = [map_stripe_to_product(product) for product in all_products if product.id in product_ids]
+    else:
+        for product in all_products:
+            if category_id and safe_int(product.metadata.get('category_id')) != safe_int(category_id):
+                continue
 
-        if featured and product.metadata.get('featured') != 'true':
-            continue
+            if featured and product.metadata.get('featured') != 'true':
+                continue
 
-        filtered_products.append(map_stripe_to_product(product))
+            filtered_products.append(map_stripe_to_product(product))
 
     return jsonify(
         {

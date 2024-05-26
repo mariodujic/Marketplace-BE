@@ -18,14 +18,18 @@ from payment.stripe_product import get_stripe_products
 from utils.environment import Environment, get_environment_file
 from utils.limiter import limiter
 
+# Determine if running remotely or locally
+is_remote = os.getenv('FLASK_REMOTE', 'false').lower() == 'true'
+
 # Load environment variables
-env_mode = os.getenv('FLASK_ENV', Environment.Dev.value)
-env_file = get_environment_file(env_mode)
-load_dotenv(env_file)
+if not is_remote:
+    env_mode = os.getenv('FLASK_ENV', Environment.Dev.value)
+    env_file = get_environment_file(env_mode)
+    load_dotenv(env_file)
 
 app = Flask(__name__)
 
-if env_mode == Environment.Dev.value:
+if not is_remote:
     cors = CORS(app)  # CORS is enabled for all origins during development
 
 # Load JWT config

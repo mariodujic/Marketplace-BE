@@ -61,8 +61,9 @@ graph TD;
         Auth[User Authentication];
         Catalog[Product Catalog];
         Cart[Shopping Cart];
-        Order[Order Management];
+        Order[Order];
         User[User];
+        Wishlist[Wishlist];
     end
 
     subgraph Flask Backend
@@ -71,12 +72,14 @@ graph TD;
         CartAPI[Cart API];
         OrderAPI[Order API];
         UserAPI[User API];
+        WishlistAPI[Wishlist API];
     end
 
     subgraph PostgreSQL Database
         UserTable[User Table];
         OrderTable[Order Table];
         CartTable[Cart Table];
+        WishlistTable[Wishlist Table];
     end
 
     subgraph PaymentGateway
@@ -88,10 +91,12 @@ graph TD;
     Cart --> CartAPI
     Order --> OrderAPI
     User --> UserAPI
+    Wishlist --> WishlistAPI
 
     AuthAPI --> UserTable
     ProductAPI --> StripeProducts
     CartAPI --> CartTable
     OrderAPI --> OrderTable
     UserAPI --> UserTable
+    WishlistAPI --> WishlistTable
 ```

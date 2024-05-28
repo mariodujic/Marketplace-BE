@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-
 from api.auth import auth_blueprint
 from api.cart import cart_blueprint
 from api.order import order_blueprint
@@ -29,8 +28,16 @@ if not is_remote:
 
 app = Flask(__name__)
 
-if not is_remote:
-    cors = CORS(app)  # CORS is enabled for all origins during development
+# Enable CORS
+if is_remote:
+    allowed_client_urls = os.getenv('CORS_ALLOWED_CLIENT_URLS')
+    if allowed_client_urls:
+        allowed_client_urls_list = allowed_client_urls.split(',')
+    else:
+        raise ValueError("CORS_ALLOWED_CLIENT_URLS environment variable is not set in production")
+    cors = CORS(app, resources={r"/*": {"origins": allowed_client_urls_list}})
+else:
+    cors = CORS(app)  # Allow all origins in development
 
 # Load JWT config
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')

@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+
 from flask import Blueprint, request, jsonify
 
 from database.cart import Cart
+from database.cart import CartItem as CartItemDb
 from database.user import User
 from payment.stripe_product import get_product_default_price_and_currency
 from utils.constants import ResponseKey
@@ -22,7 +25,8 @@ def get_user_cart():
     cart = Cart.get_cart_by_user_id(user_id=user_id, guest_id=guest_id)
 
     if cart:
-        return jsonify({ResponseKey.MESSAGE.value: "Cart successfully retrieved", "cart": cart.to_dict()}), 200
+        items = [map_to_cart(item) for item in cart.items]
+        return jsonify({ResponseKey.MESSAGE.value: "Cart successfully retrieved", "items": items}), 200
     else:
         return jsonify({ResponseKey.ERROR.value: "Cart not found"}), 404
 
@@ -109,3 +113,18 @@ def remove_item_from_cart():
         return jsonify({ResponseKey.MESSAGE.value: message}), 200
     else:
         return jsonify({ResponseKey.ERROR.value: message}), 400
+
+
+@dataclass
+class CartItem:
+    id: int
+    product_id: str
+    quantity: int
+
+
+def map_to_cart(item: CartItemDb) -> CartItem:
+    return CartItem(
+        id=item.id,
+        product_id=item.product_id,
+        quantity=item.quantity,
+    )

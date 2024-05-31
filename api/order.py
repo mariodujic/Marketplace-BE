@@ -36,22 +36,27 @@ def create_order():
 
     user_id = data.get('user_id')
     guest_id = data.get('guest_id')
-    cart_id = data.get('cart_id')
+    cart = Cart.get_cart_by_user_id(user_id, guest_id)
+    if not cart:
+        return jsonify({ResponseKey.ERROR.value: "Cart does not exist"}), 404
+
+    if not cart.items or len(cart.items) == 0:
+        return jsonify({ResponseKey.ERROR.value: "No items in the cart"}), 400
 
     is_valid, error_message = User.validate_user_id(user_id, guest_id)
     if not is_valid:
         return jsonify({ResponseKey.ERROR.value: error_message}), 400
 
-    if not cart_id:
+    if not cart.id:
         return jsonify({ResponseKey.ERROR.value: "Invalid cart_id"}), 400
 
     # Check if pending order with this cart_id exists and remove it
-    success, existing_order = Order.get_order_by_cart_id(cart_id=cart_id, status=OrderStatus.PENDING.value)
+    success, existing_order = Order.get_order_by_cart_id(cart_id=cart.id, status=OrderStatus.PENDING.value)
     if success:
         Order.cancel_order(existing_order.id)
 
     # Check if cart exists
-    success, result = Cart.get_cart_by_id(cart_id=cart_id)
+    success, result = Cart.get_cart_by_id(cart_id=cart.id)
     if not success:
         return jsonify({ResponseKey.ERROR.value: result}), 404
     cart = result
@@ -60,7 +65,7 @@ def create_order():
     if not items:
         return jsonify({ResponseKey.ERROR.value: "No items in the cart"}), 400
 
-    success, result = Order.create_order(cart_id=cart_id, user_id=user_id, guest_id=guest_id)
+    success, result = Order.create_order(cart_id=cart.id, user_id=user_id, guest_id=guest_id)
 
     if not success:
         return jsonify({ResponseKey.ERROR.value: result}), 400

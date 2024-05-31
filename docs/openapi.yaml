@@ -142,8 +142,6 @@ components:
           type: integer
         guest_id:
           type: string
-        cart_id:
-          type: string
     OrderCreateResponse:
       type: object
       properties:

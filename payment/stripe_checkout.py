@@ -11,7 +11,7 @@ def get_stripe_checkout_session(order_id, cart_id, customer_email, items):
             payment_method_types=['card'],
             line_items=items,
             mode='payment',
-            success_url=f'{post_checkout_url}/success?session_id={{CHECKOUT_SESSION_ID}}',
+            success_url=f'{post_checkout_url}/checkout-success?session_id={{CHECKOUT_SESSION_ID}}',
             cancel_url=f'{post_checkout_url}/cart',
             metadata={
                 'order_id': order_id,
@@ -24,3 +24,10 @@ def get_stripe_checkout_session(order_id, cart_id, customer_email, items):
         )
     except Exception as e:
         return False, str(e)
+
+
+def get_checkout_session_info(session_id):
+    try:
+        return stripe.checkout.Session.retrieve(session_id)
+    except stripe.error.StripeError as e:
+        return None

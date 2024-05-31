@@ -14,7 +14,7 @@ class OrderStatus(enum.Enum):
 
 class Order(db.Model):
     id = Column(Integer, primary_key=True)
-    cart_id = Column(Integer, ForeignKey('cart.id'), nullable=False, unique=False)
+    cart_id = Column(Integer, ForeignKey('cart.id'), nullable=True, unique=False)
     created_at = Column(DateTime, server_default=db.func.current_timestamp())
     updated_at = Column(DateTime, server_default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     user_id = Column(Integer, ForeignKey('user.id'), nullable=True)
@@ -55,7 +55,7 @@ class Order(db.Model):
             return False, f"Failed to create order: {str(e)}"
 
     @classmethod
-    def get_order_by_cart_id(cls, cart_id, status):
+    def get_order_by_cart_id_for_status(cls, cart_id, status):
         try:
             order = Order.query.filter_by(cart_id=cart_id, status=status)
             if order.count() > 0:

@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
-from payment.stripe_checkout import get_stripe_checkout_session
+from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info
 from payment.stripe_product import get_product_default_price_and_currency, get_cached_product_by_id
 from utils.constants import ResponseKey
 from utils.limiter import limiter
@@ -47,11 +47,7 @@ def create_order():
     if not is_valid:
         return jsonify({ResponseKey.ERROR.value: error_message}), 400
 
-    if not cart.id:
-        return jsonify({ResponseKey.ERROR.value: "Invalid cart_id"}), 400
-
-    # Check if pending order with this cart_id exists and remove it
-    success, existing_order = Order.get_order_by_cart_id(cart_id=cart.id, status=OrderStatus.PENDING.value)
+    success, existing_order = Order.get_order_by_cart_id_for_status(cart_id=cart.id, status=OrderStatus.PENDING.value)
     if success:
         Order.cancel_order(existing_order.id)
 
@@ -145,6 +141,39 @@ def _get_checkout_session(order):
         customer_email=customer_email,
         items=items
     )
+
+
+@order_blueprint.route('/order/complete', methods=['POST'])
+@limiter.limit("100/minute")
+def complete_order():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({ResponseKey.ERROR.value: "Request data is required"}), 400
+
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({ResponseKey.ERROR.value: "session_id is required"}), 400
+
+    session = get_checkout_session_info(session_id)
+    if session.payment_status != 'paid':
+        return jsonify({ResponseKey.ERROR.value: "Payment not completed"}), 400
+
+    order_id = session.metadata.get('order_id')
+    if not order_id:
+        return jsonify({ResponseKey.ERROR.value: "Order ID not found in session metadata"}), 400
+
+    success, order = Order.get_order(order_id=order_id)
+    if not success:
+        return jsonify({ResponseKey.ERROR.value: "Order not found"}), 404
+
+    order.update_order_status(order_id, OrderStatus.PAID.value)
+
+    cart_id = session.metadata.get('cart_id')
+    if cart_id:
+        Cart.delete_cart(cart_id=cart_id)
+
+    return jsonify({ResponseKey.MESSAGE.value: "Order completed successfully"}), 200
 
 
 @order_blueprint.route('/order/cancel', methods=['POST'])

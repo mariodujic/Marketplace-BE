@@ -13,7 +13,7 @@ class Cart(db.Model):
     guest_id = Column(String, nullable=True)
 
     # Relations
-    order = relationship('Order', uselist=False, back_populates='cart')
+    order = relationship('Order', uselist=True, back_populates='cart')
     items = relationship('CartItem', back_populates='cart', cascade="all, delete-orphan")
 
     @classmethod

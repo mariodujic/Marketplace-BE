@@ -67,7 +67,15 @@ def add_item_to_cart():
     except ValueError:
         return jsonify({ResponseKey.ERROR.value: "Invalid quantity format or value"}), 400
 
-    Cart.add_item_to_cart(product_id=product_id, quantity=quantity, user_id=user_id, guest_id=guest_id)
+    # Add the item to the cart. If the user is logged in, use user_id. If not, use guest_id.
+    # This approach keeps the user and guest carts separate.
+    # When a guest user signs in, their guest cart is merged with their user cart and the guest cart is deleted from db.
+    Cart.add_item_to_cart(
+        product_id=product_id,
+        quantity=quantity,
+        user_id=user_id if user_id else None,
+        guest_id=guest_id if not user_id else None
+    )
 
     return jsonify({ResponseKey.MESSAGE.value: "Item added to cart successfully"}), 201
 

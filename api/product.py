@@ -53,6 +53,7 @@ class Product:
     id: str
     created: int
     default_price: Optional[str] = None
+    discount: Optional[int] = None
     description: Optional[str] = None
     images: List[str] = field(default_factory=list)
     category_id: Optional[str] = None
@@ -62,10 +63,12 @@ class Product:
 
 
 def map_stripe_to_product(stripe_product: StripeProduct) -> Product:
+    discount = stripe_product.metadata.get('discount')
     return Product(
         id=stripe_product.id,
         created=stripe_product.created,
         default_price=stripe_product.default_price,
+        discount=safe_int(discount) if discount is not None else None,
         description=stripe_product.description,
         images=stripe_product.images,
         category_id=safe_int(stripe_product.metadata.get('category_id')),

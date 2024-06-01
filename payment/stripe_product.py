@@ -7,12 +7,19 @@ import stripe
 
 
 @dataclass
+class StripePrice:
+    id: str
+    unit_amount: int
+    currency: str
+
+
+@dataclass
 class StripeProduct:
     id: str
     object: str
     active: bool
     created: int
-    default_price: Optional[str] = None
+    default_price: Optional[StripePrice] = None
     description: Optional[str] = None
     images: List[str] = field(default_factory=list)
     features: List[str] = field(default_factory=list)
@@ -75,12 +82,11 @@ def get_stripe_products():
 
         if default_price_id:
             default_price = stripe.Price.retrieve(default_price_id)
-            default_price_data = {
-                'id': default_price.id,
-                'unit_amount': default_price.unit_amount,
-                'currency': default_price.currency
-            }
-
+            default_price_data = StripePrice(
+                id=default_price.id,
+                unit_amount=default_price.unit_amount,
+                currency=default_price.currency
+            )
         product = StripeProduct(
             id=prod['id'],
             object=prod['object'],
@@ -105,7 +111,6 @@ def get_stripe_products():
             url=prod.get('url')
         )
         products.append(product)
-
     _product_cache.update_cache(products)
     return products
 
@@ -115,20 +120,6 @@ def get_cached_product_by_id(product_id: str) -> Optional[StripeProduct]:
     if _product_cache.is_expired():
         get_stripe_products()
     return _product_cache.get_product_by_id(product_id)
-
-
-def get_product_default_price_and_currency(product_id):
-    try:
-        product = stripe.Product.retrieve(product_id)
-        default_price_id = product.get('default_price')
-        if default_price_id:
-            default_price = stripe.Price.retrieve(default_price_id)
-            return default_price.unit_amount, default_price.currency
-
-    except stripe.error.InvalidRequestError:
-        print(f"Product with ID {product_id} not found.")
-
-    return None, None
 
 
 def get_all_product_category_ids():

@@ -6,7 +6,8 @@ from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
 from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info, get_checkout_event
-from payment.stripe_product import get_product_default_price_and_currency, get_cached_product_by_id
+from payment.stripe_product import get_cached_product_by_id
+from utils.common import safe_int
 from utils.constants import ResponseKey
 from utils.limiter import limiter
 
@@ -76,16 +77,23 @@ def create_order():
         product_id = item.product_id
         quantity = item.quantity
 
-        price, product_currency = get_product_default_price_and_currency(product_id)
+        product = get_cached_product_by_id(product_id)
 
-        if price is None or quantity <= 0 or price < 0:
+        if product.default_price is None or quantity <= 0 or product.default_price.unit_amount < 0:
             return jsonify({ResponseKey.ERROR.value: "Invalid product_id, quantity, or price"}), 400
 
-        if currency and currency != product_currency:
+        if currency and currency != product.default_price.currency:
             return jsonify({ResponseKey.ERROR.value: "Different currencies in order items"}), 400
 
-        currency = product_currency
-        total_amount += quantity * price
+        currency = product.default_price.currency
+        total_amount += quantity * product.default_price.unit_amount
+
+        discount = product.metadata.get('discount')
+        price = product.default_price.unit_amount
+        # Lower the price for discount if exists
+        if discount and 0 < safe_int(discount) < 100:
+            price = product.default_price.unit_amount * (1 - safe_int(discount) / 100)
+
         Order.add_item_to_order(
             order_id=order.id,
             product_id=product_id,

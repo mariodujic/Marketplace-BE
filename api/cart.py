@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 from database.cart import Cart
 from database.cart import CartItem as CartItemDb
 from database.user import User
-from payment.stripe_product import get_product_default_price_and_currency
+from payment.stripe_product import get_cached_product_by_id
 from utils.constants import ResponseKey
 from utils.limiter import limiter
 
@@ -55,10 +55,10 @@ def add_item_to_cart():
     if not isinstance(product_id, str):
         return jsonify({ResponseKey.ERROR.value: "Invalid product_id format, must be a string"}), 400
 
-    default_price, currency = get_product_default_price_and_currency(product_id)
+    product = get_cached_product_by_id(product_id)
 
-    if not default_price:
-        return jsonify({ResponseKey.ERROR.value: "Product with this id does not exist"}), 400
+    if product.default_price is None or quantity <= 0 or product.default_price.unit_amount < 0:
+        return jsonify({ResponseKey.ERROR.value: "Invalid product_id, quantity, or price"}), 400
 
     try:
         quantity = int(quantity)

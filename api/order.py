@@ -1,9 +1,11 @@
+import os
+
 from flask import Blueprint, request, jsonify
 
 from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
-from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info
+from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info, get_checkout_event
 from payment.stripe_product import get_product_default_price_and_currency, get_cached_product_by_id
 from utils.constants import ResponseKey
 from utils.limiter import limiter
@@ -143,9 +145,9 @@ def _get_checkout_session(order):
     )
 
 
-@order_blueprint.route('/order/complete', methods=['POST'])
+@order_blueprint.route('/order/checkout/success', methods=['POST'])
 @limiter.limit("100/minute")
-def complete_order():
+def update_order_status_on_checkout_success():
     data = request.get_json()
 
     if not data:
@@ -166,6 +168,9 @@ def complete_order():
     success, order = Order.get_order(order_id=order_id)
     if not success:
         return jsonify({ResponseKey.ERROR.value: "Order not found"}), 404
+
+    if order.status == OrderStatus.PAID.value:
+        return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID"}), 200
 
     order.update_order_status(order_id, OrderStatus.PAID.value)
 
@@ -199,6 +204,39 @@ def cancel_order():
     else:
         return jsonify({ResponseKey.ERROR.value: message}), 400
 
-# @order_blueprint.route('/webhook/order/update_status', methods=['POST'])
-# def update_order_status_stripe_webhook():
-# TODO Add Stripe webhooks
+
+@order_blueprint.route('/webhook/order/paid', methods=['POST'])
+def paid_order_status_stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+    valid_event, event = get_checkout_event(payload, sig_header, endpoint_secret)
+
+    if not valid_event:
+        return jsonify({"error": event}), 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+
+        if session['payment_status'] == 'paid':
+            order_id = session['metadata'].get('order_id')
+            if not order_id:
+                return jsonify({"error": "Order ID not found in session metadata"}), 400
+
+            success, order = Order.get_order(order_id=order_id)
+            if not success:
+                return jsonify({"error": "Order not found"}), 404
+
+            if order.status == OrderStatus.PAID.value:
+                return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID"}), 200
+
+            order.update_order_status(order_id, OrderStatus.PAID.value)
+
+            cart_id = session['metadata'].get('cart_id')
+            if cart_id:
+                Cart.delete_cart(cart_id=cart_id)
+
+            return jsonify({"message": "Order status updated to PAID"}), 200
+
+    return jsonify({"message": "Event received"}), 200

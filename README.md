@@ -15,10 +15,22 @@ This is MarketPlace backend app.
 
 2. Add `.env.development` or `.env.production` file to the project root directory.
 
-3. Run app:
+3. Install dependencies
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run app:
 
    ```bash 
    flask run
+   ```
+
+5. Forward Stripe events:
+
+   ```bash
+   stripe listen --forward-to http://localhost:5000/webhook/order/paid
    ```
 
 ## Docker

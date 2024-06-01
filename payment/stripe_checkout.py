@@ -31,3 +31,12 @@ def get_checkout_session_info(session_id):
         return stripe.checkout.Session.retrieve(session_id)
     except stripe.error.StripeError as e:
         return None
+
+
+def get_checkout_event(payload, sig_header, endpoint_secret):
+    try:
+        return True, stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except ValueError as e:
+        return False, "Invalid payload"
+    except stripe.error.SignatureVerificationError as e:
+        return False, f'Invalid signature: {e}; sig: {sig_header} - secret: {endpoint_secret}'

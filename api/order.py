@@ -178,7 +178,7 @@ def update_order_status_on_checkout_success():
         return jsonify({ResponseKey.ERROR.value: "Order not found"}), 404
 
     if order.status == OrderStatus.PAID.value:
-        return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID"}), 200
+        return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID", "order_id": order_id}), 200
 
     order.update_order_status(order_id, OrderStatus.PAID.value)
 
@@ -186,7 +186,7 @@ def update_order_status_on_checkout_success():
     if cart_id:
         Cart.delete_cart(cart_id=cart_id)
 
-    return jsonify({ResponseKey.MESSAGE.value: "Order completed successfully"}), 200
+    return jsonify({ResponseKey.MESSAGE.value: "Order completed successfully", "order_id": order_id}), 200
 
 
 @order_blueprint.route('/order/cancel', methods=['POST'])

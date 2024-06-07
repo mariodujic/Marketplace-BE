@@ -55,7 +55,32 @@ To run application in a Docker container:
 
 # Database
 
-[Supabase](https://supabase.com/dashboard/project/ulwhvgtkewyxpcubqfjq) PostgreSQL.
+PostgreSQL is used as the database for this project.
+
+## PostgreSQL migration
+
+Alembic is used for database migration. Follow these steps to manage migrations:
+
+1. Create migration file:
+   ```bash
+   alembic revision --autogenerate -m <message>
+   ```
+2. Review and update the migration script if necessary. The script can be found in the alembic/versions directory.
+3. Apply the migration:
+   ```bash
+   alembic upgrade head
+   ```
+
+##### Note
+
+Considering we have both production and development environment setups, migration has to be done twice, once for each
+environment. To switch between environments, use:
+
+   ```bash
+   export FLASK_ENV=development # or production
+   ```
+
+Make sure to set the appropriate environment variables in your `.env.development` and `.env.production` files.
 
 # Payment Gateway
 

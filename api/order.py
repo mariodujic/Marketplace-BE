@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
+from notification.email_notification import send_order_confirmation_email
 from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info, get_checkout_event
 from payment.stripe_product import get_cached_product_by_id
 from utils.common import safe_int
@@ -165,11 +166,11 @@ def update_order_status_on_checkout_success():
     if not session_id:
         return jsonify({ResponseKey.ERROR.value: "session_id is required"}), 400
 
-    session = get_checkout_session_info(session_id)
-    if session.payment_status != 'paid':
+    session_info = get_checkout_session_info(session_id)
+    if session_info.session.payment_status != 'paid':
         return jsonify({ResponseKey.ERROR.value: "Payment not completed"}), 400
 
-    order_id = session.metadata.get('order_id')
+    order_id = session_info.session.metadata.get('order_id')
     if not order_id:
         return jsonify({ResponseKey.ERROR.value: "Order ID not found in session metadata"}), 400
 
@@ -178,13 +179,18 @@ def update_order_status_on_checkout_success():
         return jsonify({ResponseKey.ERROR.value: "Order not found"}), 404
 
     if order.status == OrderStatus.PAID.value:
+        if not order.notification_sent:
+            _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
         return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID", "order_id": order_id}), 200
 
     order.update_order_status(order_id, OrderStatus.PAID.value)
 
-    cart_id = session.metadata.get('cart_id')
+    cart_id = session_info.session.metadata.get('cart_id')
     if cart_id:
         Cart.delete_cart(cart_id=cart_id)
+
+    if not order.notification_sent:
+        _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
 
     return jsonify({ResponseKey.MESSAGE.value: "Order completed successfully", "order_id": order_id}), 200
 
@@ -225,10 +231,10 @@ def paid_order_status_stripe_webhook():
         return jsonify({"error": event}), 400
 
     if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
+        session_info = get_checkout_session_info(event['data']['object']['id'])
 
-        if session['payment_status'] == 'paid':
-            order_id = session['metadata'].get('order_id')
+        if session_info.session.payment_status == 'paid':
+            order_id = session_info.session.metadata.get('order_id')
             if not order_id:
                 return jsonify({"error": "Order ID not found in session metadata"}), 400
 
@@ -237,14 +243,25 @@ def paid_order_status_stripe_webhook():
                 return jsonify({"error": "Order not found"}), 404
 
             if order.status == OrderStatus.PAID.value:
+                if not order.notification_sent:
+                    _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
                 return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID"}), 200
 
             order.update_order_status(order_id, OrderStatus.PAID.value)
 
-            cart_id = session['metadata'].get('cart_id')
+            cart_id = session_info.session.metadata.get('cart_id')
             if cart_id:
                 Cart.delete_cart(cart_id=cart_id)
 
             return jsonify({"message": "Order status updated to PAID"}), 200
 
     return jsonify({"message": "Event received"}), 200
+
+
+def _send_order_confirmation_email_and_set_flag(recipient_email, order_id, first_name):
+    send_order_confirmation_email(
+        recipient_email=recipient_email,
+        order_id=order_id,
+        first_name=first_name
+    )
+    Order.flag_notification_sent(order_id)

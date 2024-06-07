@@ -1,4 +1,6 @@
 import os
+from dataclasses import dataclass, field
+from typing import Dict
 
 import stripe
 
@@ -26,11 +28,41 @@ def get_stripe_checkout_session(order_id, cart_id, customer_email, items):
         return False, str(e)
 
 
-def get_checkout_session_info(session_id):
+@dataclass
+class SessionDetails:
+    id: str
+    amount_total: int
+    currency: str
+    payment_status: str
+    customer_email: str
+    metadata: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class CheckoutSessionInfo:
+    session: SessionDetails
+    email: str
+    first_name: str = ''
+    last_name: str = ''
+
+
+def get_checkout_session_info(session_id: str) -> CheckoutSessionInfo:
     try:
-        return stripe.checkout.Session.retrieve(session_id)
+        session = stripe.checkout.Session.retrieve(session_id)
+        email = session.get('customer_details', {}).get('email', '')
+        first_name = session.get('customer_details', {}).get('name', '').split()[0]
+        last_name = session.get('customer_details', {}).get('name', '').split()[-1]
+
+        session_details = parse_session_details(session)
+
+        return CheckoutSessionInfo(
+            session=session_details,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
     except stripe.error.StripeError as e:
-        return None
+        raise RuntimeError(f"Error retrieving checkout session: {e}")
 
 
 def get_checkout_event(payload, sig_header, endpoint_secret):
@@ -40,3 +72,14 @@ def get_checkout_event(payload, sig_header, endpoint_secret):
         return False, "Invalid payload"
     except stripe.error.SignatureVerificationError as e:
         return False, f'Invalid signature: {e}; sig: {sig_header} - secret: {endpoint_secret}'
+
+
+def parse_session_details(session_data) -> SessionDetails:
+    return SessionDetails(
+        id=session_data.get('id', ''),
+        amount_total=session_data.get('amount_total', 0),
+        currency=session_data.get('currency', ''),
+        payment_status=session_data.get('payment_status', ''),
+        customer_email=session_data.get('customer_details', {}).get('email', ''),
+        metadata=session_data.get('metadata', {})
+    )

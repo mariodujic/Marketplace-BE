@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, String, Float
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, String, Float, Boolean
 from sqlalchemy.orm import relationship
 
 from database import db
@@ -21,6 +21,7 @@ class Order(db.Model):
     guest_id = Column(String, nullable=True)
     total_amount = Column(Float, nullable=False, default=0.0)  # In cents
     status = Column(String, nullable=False, default=OrderStatus.PENDING.value)
+    notification_sent = Column(Boolean, nullable=False, default=False)
 
     # Relations
     cart = relationship('Cart', back_populates='order')
@@ -116,6 +117,16 @@ class Order(db.Model):
     def cancel_order(cls, order_id):
         return cls.update_order_status(order_id, OrderStatus.CANCELLED.value)
 
+    @classmethod
+    def flag_notification_sent(cls, order_id):
+        order = cls.query.get(order_id)
+        if not order:
+            return False, "Order not found"
+
+        order.notification_sent = True
+        db.session.commit()
+        return True, "Notification flagged as sent"
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -123,6 +134,7 @@ class Order(db.Model):
             "guest_id": self.guest_id,
             "total_amount": self.total_amount,  # In cents
             "status": self.status,
+            "notification_sent": self.notification_sent,
             "items": [item.to_dict() for item in self.items],
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None

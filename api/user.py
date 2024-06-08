@@ -3,11 +3,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from database.user import User
 from utils.constants import ResponseKey
+from utils.limiter import limiter
 
 user_blueprint = Blueprint('user', __name__)
 
 
 @user_blueprint.route('/user', methods=['GET'])
+@limiter.limit("200/minute")
 @jwt_required()
 def get_user_profile():
     current_user_email = get_jwt_identity()
@@ -19,6 +21,7 @@ def get_user_profile():
 
 
 @user_blueprint.route('/user', methods=['PATCH'])
+@limiter.limit("200/minute")
 @jwt_required()
 def update_user_profile():
     current_user_email = get_jwt_identity()
@@ -45,6 +48,7 @@ def update_user_profile():
 
 
 @user_blueprint.route('/user/deactivate', methods=['POST'])
+@limiter.limit("60/minute")
 @jwt_required()
 def deactivate_user():
     current_user_email = get_jwt_identity()

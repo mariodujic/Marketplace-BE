@@ -1,6 +1,6 @@
 import os
-from dataclasses import dataclass, field
-from typing import Dict
+from dataclasses import dataclass
+from typing import Dict, List, Any
 
 import stripe
 
@@ -31,11 +31,29 @@ def get_stripe_checkout_session(order_id, cart_id, customer_email, items):
 @dataclass
 class SessionDetails:
     id: str
+    object: str
+    amount_subtotal: int
     amount_total: int
+    automatic_tax: Dict[str, Any]
+    cancel_url: str
+    client_reference_id: str
     currency: str
-    payment_status: str
+    customer: str
+    customer_details: Dict[str, Any]
     customer_email: str
-    metadata: Dict[str, str] = field(default_factory=dict)
+    locale: str
+    metadata: Dict[str, str]
+    mode: str
+    payment_intent: str
+    payment_method_options: Dict[str, Any]
+    payment_method_types: List[str]
+    payment_status: str
+    setup_intent: str
+    shipping_address: str
+    submit_type: str
+    success_url: str
+    total_details: Dict[str, Any]
+    url: str
 
 
 @dataclass
@@ -75,11 +93,38 @@ def get_checkout_event(payload, sig_header, endpoint_secret):
 
 
 def parse_session_details(session_data) -> SessionDetails:
+    shipping_address = session_data.get('shipping_details', {}).get('address', {})
+    shipping_address_formatted = ', '.join(filter(None, [
+        shipping_address.get('line1', ''),
+        shipping_address.get('line2', ''),
+        shipping_address.get('city', ''),
+        shipping_address.get('state', ''),
+        shipping_address.get('postal_code', ''),
+        shipping_address.get('country', '')
+    ]))
     return SessionDetails(
         id=session_data.get('id', ''),
+        object=session_data.get('object', ''),
+        amount_subtotal=session_data.get('amount_subtotal', 0),
         amount_total=session_data.get('amount_total', 0),
+        automatic_tax=session_data.get('automatic_tax', {}),
+        cancel_url=session_data.get('cancel_url', ''),
+        client_reference_id=session_data.get('client_reference_id', ''),
         currency=session_data.get('currency', ''),
-        payment_status=session_data.get('payment_status', ''),
+        customer=session_data.get('customer', ''),
+        customer_details=session_data.get('customer_details', {}),
         customer_email=session_data.get('customer_details', {}).get('email', ''),
-        metadata=session_data.get('metadata', {})
+        locale=session_data.get('locale', ''),
+        metadata=session_data.get('metadata', {}),
+        mode=session_data.get('mode', ''),
+        payment_intent=session_data.get('payment_intent', ''),
+        payment_method_options=session_data.get('payment_method_options', {}),
+        payment_method_types=session_data.get('payment_method_types', []),
+        payment_status=session_data.get('payment_status', ''),
+        setup_intent=session_data.get('setup_intent', ''),
+        shipping_address=shipping_address_formatted,
+        submit_type=session_data.get('submit_type', ''),
+        success_url=session_data.get('success_url', ''),
+        total_details=session_data.get('total_details', {}),
+        url=session_data.get('url', '')
     )

@@ -47,7 +47,14 @@ def send_order_confirmation_email_to_customer(recipient_email: str, order_id: st
             server.quit()
 
 
-def send_order_confirmation_email_to_admin(recipient_email: str, order_id: str, first_name: str, last_name: str):
+def send_order_confirmation_email_to_admin(
+        customer_email: str,
+        order_id: str,
+        first_name: str,
+        last_name: str,
+        payment_id: str,
+        shipping_address: str
+):
     if not all([smtp_host, smtp_user, smtp_password, smtp_sender_email]):
         print("One or more required SMTP config environment variables are missing.")
         return False
@@ -64,7 +71,9 @@ def send_order_confirmation_email_to_admin(recipient_email: str, order_id: str, 
         <p>Poštovani admin,</p>
         <p>Zaprimljena je nova narudžba pod brojem <strong>{order_id}</strong>.</p>
         <p>Ime i prezime: <strong>{first_name} {last_name}</strong>.</p>
-        <p>Email: <strong>{recipient_email}</strong>.</p>
+        <p>Email: <strong>{customer_email}</strong>.</p>
+        <p>ID plaćanja: <strong>{payment_id}</strong>.</p>
+        <p>Adresa slanja: <strong>{shipping_address}</strong>.</p>
         <p>Srdačan pozdrav!</p>
     </body>
     </html>

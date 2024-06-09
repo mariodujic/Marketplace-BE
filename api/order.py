@@ -5,7 +5,8 @@ from flask import Blueprint, request, jsonify
 from database.cart import Cart
 from database.order import Order, OrderStatus
 from database.user import User
-from notification.email_notification import send_order_confirmation_email
+from notification.email_notification import send_order_confirmation_email_to_customer, \
+    send_order_confirmation_email_to_admin
 from payment.stripe_checkout import get_stripe_checkout_session, get_checkout_session_info, get_checkout_event
 from payment.stripe_product import get_cached_product_by_id
 from utils.common import safe_int
@@ -180,7 +181,12 @@ def update_order_status_on_checkout_success():
 
     if order.status == OrderStatus.PAID.value:
         if not order.notification_sent:
-            _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
+            _send_order_confirmation_email_and_set_flag(
+                session_info.email,
+                order_id,
+                session_info.first_name,
+                session_info.last_name
+            )
         return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID", "order_id": order_id}), 200
 
     order.update_order_status(order_id, OrderStatus.PAID.value)
@@ -190,7 +196,12 @@ def update_order_status_on_checkout_success():
         Cart.delete_cart(cart_id=cart_id)
 
     if not order.notification_sent:
-        _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
+        _send_order_confirmation_email_and_set_flag(
+            session_info.email,
+            order_id,
+            session_info.first_name,
+            session_info.last_name
+        )
 
     return jsonify({ResponseKey.MESSAGE.value: "Order completed successfully", "order_id": order_id}), 200
 
@@ -244,7 +255,12 @@ def paid_order_status_stripe_webhook():
 
             if order.status == OrderStatus.PAID.value:
                 if not order.notification_sent:
-                    _send_order_confirmation_email_and_set_flag(session_info.email, order_id, session_info.first_name)
+                    _send_order_confirmation_email_and_set_flag(
+                        session_info.email,
+                        order_id,
+                        session_info.first_name,
+                        session_info.last_name
+                    )
                 return jsonify({ResponseKey.MESSAGE.value: "Order already marked as PAID"}), 200
 
             order.update_order_status(order_id, OrderStatus.PAID.value)
@@ -258,10 +274,17 @@ def paid_order_status_stripe_webhook():
     return jsonify({"message": "Event received"}), 200
 
 
-def _send_order_confirmation_email_and_set_flag(recipient_email, order_id, first_name):
-    send_order_confirmation_email(
+def _send_order_confirmation_email_and_set_flag(recipient_email: str, order_id: str, first_name: str, last_name: str):
+    sent_to_customer = send_order_confirmation_email_to_customer(
         recipient_email=recipient_email,
         order_id=order_id,
         first_name=first_name
     )
-    Order.flag_notification_sent(order_id)
+    sent_to_admin = send_order_confirmation_email_to_admin(
+        recipient_email=recipient_email,
+        order_id=order_id,
+        first_name=first_name,
+        last_name=last_name
+    )
+    if sent_to_customer and sent_to_admin:
+        Order.flag_notification_sent(order_id)

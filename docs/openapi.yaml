@@ -55,6 +55,19 @@ components:
         guest_id:
           type: string
           example: "1"
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+    PasswordUpdateRequest:
+      type: object
+      properties:
+        new_password:
+          type: string
+          example: "newpassword123"
     CartRequest:
       type: object
       properties:
@@ -300,7 +313,7 @@ paths:
         - Auth
       summary: Refresh the access token using a refresh token
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         "200":
           description: Access token successfully refreshed
@@ -311,13 +324,90 @@ paths:
                 properties:
                   access_token:
                     type: string
+  /reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Request a password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "200":
+          description: Password reset link has been sent to your email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset link has been sent to your email"
+        "400":
+          description: Email is required or invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
+  /update-password/{reset_token}:
+    post:
+      tags:
+        - Auth
+      summary: Update password using reset token
+      parameters:
+        - in: path
+          name: reset_token
+          required: true
+          schema:
+            type: string
+          description: The reset token received in the email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordUpdateRequest"
+      responses:
+        "200":
+          description: Password has been updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password has been updated successfully"
+        "400":
+          description: New password is required, invalid or expired reset token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description:
   /user:
     get:
       tags:
         - User
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       summary: Get user profile
       description: Retrieve the profile of the current user based on JWT.
       operationId: getUserProfile
@@ -648,7 +738,7 @@ paths:
     get:
       summary: Retrieve a user's wishlist
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       operationId: getWishlist
       tags:
         - Wishlist
@@ -675,7 +765,7 @@ paths:
     post:
       summary: Add an item to the wishlist
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       operationId: addItemToWishlist
       tags:
         - Wishlist
@@ -703,7 +793,7 @@ paths:
     post:
       summary: Remove an item from the wishlist
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       operationId: removeItemFromWishlist
       tags:
         - Wishlist

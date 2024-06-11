@@ -13,6 +13,7 @@ from api.product import product_blueprint
 from api.user import user_blueprint
 from api.wishlist import wishlist_blueprint
 from database import db
+from notification.email_notification import initialize_email_notification_env_variables
 from payment.stripe import initialize_stripe
 from payment.stripe_product import get_stripe_products
 from utils.environment import Environment, get_environment_file
@@ -68,6 +69,9 @@ get_stripe_products()
 
 # Initialize request rate limiter
 limiter.init_app(app)
+
+# Notifications
+initialize_email_notification_env_variables()
 
 if __name__ == '__main__':
     app.run()
